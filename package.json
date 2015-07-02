@@ -1,0 +1,21 @@
+{
+  "name": "allex_userresolverservice",
+  "version": "0.1.0",
+  "description": "UserResolverService",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.hers.rs:allex_services/userresolver.git"
+  },
+  "keywords": [
+    "ecosystem:allex",
+    "Service",
+    "UserResolver"
+  ],
+  "author": "HERS Belgrade",
+  "license": "ISC"
+}
+
