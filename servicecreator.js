@@ -1,6 +1,8 @@
 function createUserResolverService(execlib, ParentServicePack) {
   'use strict';
-  var ParentService = ParentServicePack.Service;
+  var lib = execlib.lib,
+    q = lib.q,
+    ParentService = ParentServicePack.Service;
 
   function factoryCreator(parentFactory) {
     return {
@@ -10,7 +12,14 @@ function createUserResolverService(execlib, ParentServicePack) {
   }
 
   function UserResolverService(prophash) {
+    if(!(prophash && prophash.data)){
+      throw new lib.Error('NO_DATA_IN_PROPERTYHASH','UserResolverService propertyhash misses the data field');
+    }
+    if(!prophash.data.modulename){
+      throw new lib.Error('NO_DATA_MODULENAME_IN_PROPERTYHASH','UserResolverService propertyhash misses the data.modulename field');
+    }
     ParentService.call(this, prophash);
+    this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data);
   }
   ParentService.inherit(UserResolverService, factoryCreator);
   UserResolverService.prototype.__cleanUp = function() {
