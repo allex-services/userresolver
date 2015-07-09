@@ -1,3 +1,10 @@
 module.exports = {
-  resolveUser : true
+  resolveUser : [{
+    title: 'Credentials hash',
+    type: 'object'
+  }],
+  registerUser : [{
+    title: 'User initial hash',
+    type: 'object'
+  }]
 };

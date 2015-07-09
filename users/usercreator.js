@@ -17,48 +17,50 @@ function createUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
   User.prototype.resolveUser = function (credentials, defer) {
-    console.log('resolveUser on credentials',credentials);
     var db = this.__service.subservices.get('db');
     if(!db){
       defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
       return;
     }
-    db.subConnect('.',{name:'-',role:'user',filter:{
-      op: 'eq',
-      field: 'username',
-      value: credentials.username
-    }}).done(
-      this.onDBUserSink.bind(this, credentials, defer),
-      //defer.reject.bind(defer),
-      function(reason){
-        console.error(reason);
-        defer.reject(reason);
-      }
-    );
-  };
-  User.prototype.onDBUserSink = function (credentials,defer,sink){
-    var foundobj = {found: false};
-    taskRegistry.run('materializeData',{
-      sink: sink,
-      data: [],
-      onRecordCreation: this.onDBUserFound.bind(this, defer, foundobj),
-      onInitiated: function () {
-        if (!foundobj.found) {
-          defer.resolve(null);
-        }
-        lib.runNext(sink.destroy.bind(sink));
-      }
+    taskRegistry.run('readFromDataSink', {
+      sink: db,
+      cb: this.onDBUserFound.bind(this, defer, credentials),
+      errorcb: defer.reject.bind(defer),
+      filter:{
+        op: 'eq',
+        field: 'username',
+        value: credentials.username
+      },
+      singleshot: true
     });
   };
-  User.prototype.onDBUserFound = function (defer, foundobj, dbuserhash) {
-    foundobj.found = true;
+  User.prototype.registerUser = function (datahash, defer) {
+    var db = this.__service.subservices.get('db');
+    if(!db){
+      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+      return;
+    }
+    //cook the password here...
+    db.call('create',datahash).done(
+      defer.resolve.bind(defer),
+      defer.reject.bind(defer),
+      defer.notify.bind(defer)
+    );
+  };
+  User.prototype.onDBUserFound = function (defer, credentials, dbuserhash) {
     //have fun with password hashing etc...
-    defer.resolve({
+    defer.resolve(this.validateCredentialsAgainstDBUser(credentials, dbuserhash) ? {
       name: dbuserhash.username,
       role: 'user',
       profile: dbuserhash
-    });
+    } : null);
   };
+  User.prototype.validateCredentialsAgainstDBUser = function (credentials, dbuserhash) {
+    console.log(credentials,'ok against',dbuserhash,'?');
+    //for now, plain and stupid
+    return credentials.username===dbuserhash.username && credentials.password===dbuserhash.password;
+  };
+
 
   return User;
 }
