@@ -28,8 +28,8 @@ function createUser(execlib, ParentUser) {
       errorcb: defer.reject.bind(defer),
       filter:{
         op: 'eq',
-        field: 'username',
-        value: credentials.username
+        field: this.userNameColumnName(),
+        value: this.userNameValueOf(credentials)
       },
       singleshot: true
     });
@@ -50,7 +50,7 @@ function createUser(execlib, ParentUser) {
   User.prototype.onDBUserFound = function (defer, credentials, dbuserhash) {
     //have fun with password hashing etc...
     defer.resolve(this.validateCredentialsAgainstDBUser(credentials, dbuserhash) ? {
-      name: dbuserhash.username,
+      name: this.userNameValueOf(dbuserhash),
       role: 'user',
       profile: dbuserhash
     } : null);
@@ -58,7 +58,13 @@ function createUser(execlib, ParentUser) {
   User.prototype.validateCredentialsAgainstDBUser = function (credentials, dbuserhash) {
     console.log(credentials,'ok against',dbuserhash,'?');
     //for now, plain and stupid
-    return credentials.username===dbuserhash.username && credentials.password===dbuserhash.password;
+    return this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password;
+  };
+  User.prototype.userNameValueOf = function (obj) {
+    return obj[this.userNameColumnName()];
+  };
+  User.prototype.userNameColumnName = function () {
+    return this.__service.namecolumn;
   };
 
 

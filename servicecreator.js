@@ -19,6 +19,8 @@ function createUserResolverService(execlib, ParentServicePack) {
       throw new lib.Error('NO_DATA_MODULENAME_IN_PROPERTYHASH','UserResolverService propertyhash misses the data.modulename field');
     }
     ParentService.call(this, prophash);
+    this.namecolumn = prophash.namecolumn || 'username';
+    this.passwordcolumn = prophash.passwordcolumn || 'cryptedpassword';
     this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data);
   }
   ParentService.inherit(UserResolverService, factoryCreator);
