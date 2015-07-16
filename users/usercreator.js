@@ -47,7 +47,46 @@ function createUser(execlib, ParentUser) {
       defer.notify.bind(defer)
     );
   };
+  User.prototype.usernamesLike = function (startingstring, defer) {
+    var db = this.__service.subservices.get('db');
+    if(!db){
+      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+      return;
+    }
+    taskRegistry.run('readFromDataSink', {
+      sink: db,
+      filter: {
+        op: 'startingwith',
+        field: 'username',
+        value: startingstring
+      },
+      cb: console.log.bind(console,'usernamesLike')
+    });
+  };
+  User.prototype.usernameExists = function (username, defer) {
+    var db = this.__service.subservices.get('db');
+    if(!db){
+      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+      return;
+    }
+    taskRegistry.run('readFromDataSink', {
+      sink: db,
+      filter: {
+        op: 'eq',
+        field: 'username',
+        value: username
+      },
+      cb: function(records) {
+        console.log('readFromDataSink:',records);
+        defer.resolve((records && records.length>0).toString());
+      }
+    });
+  };
   User.prototype.onDBUserFound = function (defer, credentials, dbuserhash) {
+    if (!dbuserhash) {
+      defer.resolve(null);
+      return;
+    }
     //have fun with password hashing etc...
     defer.resolve(this.validateCredentialsAgainstDBUser(credentials, dbuserhash) ? {
       name: this.userNameValueOf(dbuserhash),
@@ -61,7 +100,7 @@ function createUser(execlib, ParentUser) {
     return this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password;
   };
   User.prototype.userNameValueOf = function (obj) {
-    return obj[this.userNameColumnName()];
+    return obj ? obj[this.userNameColumnName()] : void 0;
   };
   User.prototype.userNameColumnName = function () {
     return this.__service.namecolumn;
