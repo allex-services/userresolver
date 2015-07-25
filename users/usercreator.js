@@ -17,6 +17,12 @@ function createUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
   User.prototype.resolveUser = function (credentials, defer) {
+    this.internalFetchUser(credentials, true, defer); //do the checking
+  };
+  User.prototype.fetchUser = function (trusteduserhash, defer) {
+    this.internalFetchUser(trusteduserhash, false, defer); //do not do the checking
+  };
+  User.prototype.internalFetchUser = function (credentials, docheck, defer) {
     var db = this.__service.subservices.get('db');
     if(!db){
       defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
@@ -24,7 +30,7 @@ function createUser(execlib, ParentUser) {
     }
     taskRegistry.run('readFromDataSink', {
       sink: db,
-      cb: this.onDBUserFound.bind(this, defer, credentials),
+      cb: this.onDBUserFound.bind(this, defer, credentials, docheck),
       errorcb: defer.reject.bind(defer),
       filter:{
         op: 'eq',
@@ -82,17 +88,25 @@ function createUser(execlib, ParentUser) {
       }
     });
   };
-  User.prototype.onDBUserFound = function (defer, credentials, dbuserhash) {
+  User.prototype.onDBUserFound = function (defer, credentials, docheck, dbuserhash) {
     if (!dbuserhash) {
       defer.resolve(null);
       return;
     }
+    if (docheck) {
     //have fun with password hashing etc...
-    defer.resolve(this.validateCredentialsAgainstDBUser(credentials, dbuserhash) ? {
-      name: this.userNameValueOf(dbuserhash),
-      role: 'user',
-      profile: dbuserhash
-    } : null);
+      defer.resolve(this.validateCredentialsAgainstDBUser(credentials, dbuserhash) ? {
+        name: this.userNameValueOf(dbuserhash),
+        role: 'user',
+        profile: dbuserhash
+      } : null);
+    } else {
+      defer.resolve({
+        name: this.userNameValueOf(dbuserhash),
+        role: 'user',
+        profile: dbuserhash
+      });
+    }
   };
   User.prototype.validateCredentialsAgainstDBUser = function (credentials, dbuserhash) {
     console.log(credentials,'ok against',dbuserhash,'?');

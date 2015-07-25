@@ -3,6 +3,10 @@ module.exports = {
     title: 'Credentials hash',
     type: 'object'
   }],
+  fetchUser: [{
+    title: 'Trusted hash',
+    type: 'object'
+  }],
   registerUser : [{
     title: 'User initial hash',
     type: 'object'
