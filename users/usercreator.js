@@ -109,7 +109,7 @@ function createUser(execlib, ParentUser) {
     }
   };
   User.prototype.validateCredentialsAgainstDBUser = function (credentials, dbuserhash) {
-    console.log(credentials,'ok against',dbuserhash,'?');
+    //console.log(credentials,'ok against',dbuserhash,'?', this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password);
     //for now, plain and stupid
     return this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password;
   };
