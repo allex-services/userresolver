@@ -34,7 +34,7 @@ function createUser(execlib, ParentUser) {
       errorcb: defer.reject.bind(defer),
       filter:{
         op: 'eq',
-        field: this.userNameColumnName(),
+        field: this.userNameColumnName(credentials),
         value: this.userNameValueOf(credentials)
       },
       singleshot: true
@@ -114,9 +114,9 @@ function createUser(execlib, ParentUser) {
     return this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password;
   };
   User.prototype.userNameValueOf = function (obj) {
-    return obj ? obj[this.userNameColumnName()] : void 0;
+    return obj ? obj[this.userNameColumnName(obj)] : void 0;
   };
-  User.prototype.userNameColumnName = function () {
+  User.prototype.userNameColumnName = function (credentials) {
     return this.__service.namecolumn;
   };
 
