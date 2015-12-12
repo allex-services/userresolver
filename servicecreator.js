@@ -21,11 +21,17 @@ function createUserResolverService(execlib, ParentServicePack) {
     ParentService.call(this, prophash);
     this.namecolumn = prophash.namecolumn || 'username';
     this.passwordcolumn = prophash.passwordcolumn || 'cryptedpassword';
-    this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data);
+    this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data).then(
+      this.readyToAcceptUsersDefer.resolve.bind(this.readyToAcceptUsersDefer, true),
+      this.close.bind(this)
+    );
   }
   ParentService.inherit(UserResolverService, factoryCreator);
   UserResolverService.prototype.__cleanUp = function() {
     ParentService.prototype.__cleanUp.call(this);
+  };
+  UserResolverService.prototype.isInitiallyReady = function (prophash) {
+    return false;
   };
   
   return UserResolverService;
