@@ -1,8 +1,7 @@
-function createUserResolverService(execlib, ParentServicePack) {
+function createUserResolverService(execlib, ParentService) {
   'use strict';
   var lib = execlib.lib,
-    q = lib.q,
-    ParentService = ParentServicePack.Service;
+    q = lib.q;
 
   function factoryCreator(parentFactory) {
     return {

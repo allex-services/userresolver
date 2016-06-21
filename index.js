@@ -1,5 +1,14 @@
 function createServicePack(execlib) {
   'use strict';
+
+  return {
+    service: {
+      dependencies: ['.']
+    },
+    sinkmap: {
+      dependencies: ['.']
+    }
+  };
   var ret = require('./clientside')(execlib),
     execSuite = execlib.execSuite,
     ParentServicePack = execSuite.registry.get('.');
