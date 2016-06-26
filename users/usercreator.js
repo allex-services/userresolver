@@ -63,7 +63,7 @@ function createUser(execlib, ParentUser) {
       sink: db,
       filter: {
         op: 'startingwith',
-        field: 'username',
+        field: this.userNameColumnName(),
         value: startingstring
       },
       cb: console.log.bind(console,'usernamesLike')
@@ -75,16 +75,18 @@ function createUser(execlib, ParentUser) {
       defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
       return;
     }
+    console.log('usernameExists?', this.userNameColumnName(), '===', username);
     taskRegistry.run('readFromDataSink', {
       sink: db,
       filter: {
         op: 'eq',
-        field: 'username',
+        field: this.userNameColumnName(),
         value: username
       },
       cb: function(records) {
-        console.log('readFromDataSink:',records);
-        defer.resolve((records && records.length>0).toString());
+        //console.log('readFromDataSink:',records);
+        defer.resolve(records && records.length>0);
+        defer = null;
       }
     });
   };
