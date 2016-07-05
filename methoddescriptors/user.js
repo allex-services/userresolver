@@ -7,6 +7,16 @@ module.exports = {
     title: 'Trusted hash',
     type: 'object'
   }],
+  updateUser: [{
+    title: 'Trusted hash',
+    type: 'object'
+  },{
+    title: 'Update datahash',
+    type: 'object'
+  },{
+    title: 'Update options',
+    type: 'object'
+  }],
   registerUser : [{
     title: 'User initial hash',
     type: 'object'

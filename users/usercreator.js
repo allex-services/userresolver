@@ -2,6 +2,7 @@ function createUser(execlib, ParentUser) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
+    qlib = lib.qlib,
     execSuite = execlib.execSuite,
     taskRegistry = execSuite.taskRegistry;
 
@@ -39,6 +40,18 @@ function createUser(execlib, ParentUser) {
       },
       singleshot: true
     });
+  };
+  User.prototype.updateUser = function (trusteduserhash, datahash, options, defer) {
+    var db = this.__service.subservices.get('db');
+    if(!db){
+      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+      return;
+    }
+    qlib.promise2defer(db.call('update', {
+      op: 'eq',
+      field: this.userNameColumnName(trusteduserhash),
+      value: this.userNameValueOf(trusteduserhash)
+    }, datahash, options), defer);
   };
   User.prototype.registerUser = function (datahash, defer) {
     var db = this.__service.subservices.get('db');
