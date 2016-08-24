@@ -27,6 +27,9 @@ function createUser(execlib, ParentUser) {
     var db = this.__service.subservices.get('db');
     if(!db){
       defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+      defer = null;
+      credentials = null;
+      docheck = null;
       return;
     }
     taskRegistry.run('readFromDataSink', {
@@ -40,6 +43,9 @@ function createUser(execlib, ParentUser) {
       },
       singleshot: true
     });
+    defer = null;
+    credentials = null;
+    docheck = null;
   };
   User.prototype.updateUser = function (trusteduserhash, datahash, options, defer) {
     var db = this.__service.subservices.get('db');
@@ -122,6 +128,9 @@ function createUser(execlib, ParentUser) {
         profile: dbuserhash
       });
     }
+    defer = null;
+    credentials = null;
+    docheck = null;
   };
   User.prototype.validateCredentialsAgainstDBUser = function (credentials, dbuserhash) {
     //console.log(credentials,'ok against',dbuserhash,'?', this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password);
