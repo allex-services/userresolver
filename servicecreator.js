@@ -11,19 +11,21 @@ function createUserResolverService(execlib, ParentService) {
   }
 
   function UserResolverService(prophash) {
-    if(!(prophash && prophash.data)){
+    if(!(prophash.skipdata || prophash.data)){
       throw new lib.Error('NO_DATA_IN_PROPERTYHASH','UserResolverService propertyhash misses the data field');
     }
-    if(!prophash.data.modulename){
+    if(!(prophash.skipdata || prophash.data.modulename)){
       throw new lib.Error('NO_DATA_MODULENAME_IN_PROPERTYHASH','UserResolverService propertyhash misses the data.modulename field');
     }
     ParentService.call(this, prophash);
     this.namecolumn = prophash.namecolumn || 'username';
     this.passwordcolumn = prophash.passwordcolumn || 'cryptedpassword';
-    this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data).then(
-      this.readyToAcceptUsersDefer.resolve.bind(this.readyToAcceptUsersDefer, true),
-      this.close.bind(this)
-    );
+    if (!prophash.skipdata) {
+      this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data).then(
+        this.readyToAcceptUsersDefer.resolve.bind(this.readyToAcceptUsersDefer, true),
+        this.close.bind(this)
+      );
+    }
   }
   ParentService.inherit(UserResolverService, factoryCreator);
   UserResolverService.prototype.__cleanUp = function() {
