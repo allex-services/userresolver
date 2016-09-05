@@ -1,0 +1,39 @@
+[
+  {
+    "modulename": "allex_userresolverservice",
+    "instancename": "PlainResolver",
+    "propertyhash": {
+      "skipencryption": true,
+      "data": {
+        "modulename": "allex_genericuserdataservice",
+        "storage": {
+          "modulename": "allex_mongostorage",
+          "propertyhash": {
+            "server": "127.0.0.1",
+            "database": "resolvertestdb",
+            "table": "users",
+            "_idname": "username"
+          }
+        }
+      }
+    }
+  },
+  {
+    "modulename": "allex_userresolverservice",
+    "instancename": "Resolver",
+    "propertyhash": {
+      "data": {
+        "modulename": "allex_genericuserdataservice",
+        "storage": {
+          "modulename": "allex_mongostorage",
+          "propertyhash": {
+            "server": "127.0.0.1",
+            "database": "resolvertestdb",
+            "table": "users",
+            "_idname": "username"
+          }
+        }
+      }
+    }
+  }
+]
