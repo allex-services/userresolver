@@ -28,5 +28,12 @@ module.exports = {
   usernameExists: [{
     title: 'Username',
     type: 'string'
+  }],
+  forcePassword: [{
+    title: 'Username',
+    type: 'string'
+  },{
+    title: 'Forced Password',
+    type: 'string'
   }]
 };

@@ -30,15 +30,7 @@ function createUser(execlib, ParentUser) {
     ])).go(), defer);
   };
   User.prototype.updateUser = function (trusteduserhash, datahash, options, defer) {
-    if(!this.__service.dbUserSink){
-      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
-      return;
-    }
-    qlib.promise2defer(this.__service.dbUserSink.call('update', {
-      op: 'eq',
-      field: this.userNameColumnName(trusteduserhash),
-      value: this.userNameValueOf(trusteduserhash)
-    }, datahash, options), defer);
+    qlib.promise2defer(this.__service.updateUser(trusteduserhash, datahash, options), defer);
   };
   User.prototype.registerUser = function (datahash, defer) {
     qlib.promise2defer(this.__service.registerUser(datahash), defer);
@@ -48,6 +40,9 @@ function createUser(execlib, ParentUser) {
   };
   User.prototype.usernameExists = function (username, defer) {
     qlib.promise2defer(this.__service.usernameExists(username), defer);
+  };
+  User.prototype.forcePassword = function (username, forcedpassword, defer) {
+    qlib.promise2defer(this.__service.forcePassword(username, forcedpassword), defer);
   };
   return User;
 }

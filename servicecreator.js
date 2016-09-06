@@ -150,6 +150,9 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.hashOfDBHash = function (dbhash) {
+    if (!dbhash) {
+      return null;
+    }
     return {
       name: this.userNameValueOf(dbhash),
       role: 'user',
@@ -159,6 +162,10 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
 
   UserResolverService.prototype.hashOfDBHashPromised = function (dbhash) {
     return q(this.hashOfDBHash(dbhash));
+  };
+
+  UserResolverService.prototype.pickedHashPromised = function (dbhash) {
+    return q(lib.pickExcept(dbhash, [this.passwordcolumn, 'salt']));
   };
 
   UserResolverService.prototype.onSaltAndHash = function (datahash) {
@@ -180,7 +187,60 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     //cook the password here...
     return this.doSaltAndHash(datahash).then(
       this.dbUserSink.call.bind(this.dbUserSink, 'create')
+    ).then(
+      this.pickedHashPromised.bind(this)
     );
+  };
+
+  UserResolverService.prototype.updateUser = function (trusteduserhash, datahash, options) {
+    var chain;
+    if(!this.dbUserSink){
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    chain = [];
+    if (datahash.hasOwnProperty('password')) {
+      chain.push(this.doSaltAndHash.bind(this, datahash));
+    }
+    chain.push(this.dbUserSink.call.bind(this.dbUserSink, 'update', {
+      op: 'eq',
+      field: this.userNameColumnName(trusteduserhash),
+      value: this.userNameValueOf(trusteduserhash)
+    }, datahash, options));
+    chain.push(this.pickedHashPromised.bind(this));
+    return (new qlib.PromiseChainerJob(chain)).go();
+  };
+
+  UserResolverService.prototype.forcePassword = function (username, forcedpassword) {
+    var usernamehash, passwordhash;
+    if (!this.dbUserSink) {
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    usernamehash = this.hashFromUsername(username);
+    passwordhash = this.hashFromPassword(forcedpassword);
+    return this.doSaltAndHash(passwordhash).then(
+      (saltandhashobj) => {
+        var ret = this.dbUserSink.call(
+          'update',
+          {op: 'eq', field: this.userNameColumnName(usernamehash), value: username},
+          saltandhashobj,
+          {op: 'set'}
+        );
+        username = null;
+        usernamehash = null;
+        return ret;
+      });
+  };
+
+  UserResolverService.prototype.hashFromUsername = function (username) {
+    var ret = {};
+    ret[this.namecolumn] = username;
+    return ret;
+  };
+  
+  UserResolverService.prototype.hashFromPassword = function (password) {
+    var ret = {};
+    ret[this.passwordcolumn] = password;
+    return ret;
   };
   
   UserResolverService.prototype.userNameValueOf = function (obj) {
