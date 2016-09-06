@@ -80,6 +80,48 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     return d.promise;
   };
 
+  UserResolverService.prototype.usernamesLike = function (startingstring) {
+    var d;
+    if(!this.dbUserSink){
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    d = q.defer();
+    taskRegistry.run('readFromDataSink', {
+      sink: this.dbUserSink,
+      cb: d.resolve.bind(d), 
+      errorcb: d.reject.bind(d),
+      filter: {
+        op: 'startingwith',
+        field: this.userNameColumnName(),
+        value: startingstring
+      }
+    });
+    return d.promise;
+  };
+
+  UserResolverService.prototype.usernameExists = function (username) {
+    var d;
+    if(!this.dbUserSink){
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    d = q.defer();
+    console.log('usernameExists?', this.userNameColumnName(), '===', username);
+    taskRegistry.run('readFromDataSink', {
+      sink: this.dbUserSink,
+      cb: function(records) {
+        //console.log('readFromDataSink:',records);
+        d.resolve(records && records.length>0);
+      },
+      errorcb: d.reject.bind(d),
+      filter: {
+        op: 'eq',
+        field: this.userNameColumnName(),
+        value: username
+      }
+    });
+    return d.promise;
+  };
+
   UserResolverService.prototype.match = function (credentials, dbhash) {
     if (!this.encryptpassword) {
       return q(this.simpleMatch(credentials, dbhash) ? this.hashOfDBHash(dbhash) : null);

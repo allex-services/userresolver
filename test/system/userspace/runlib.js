@@ -8,7 +8,9 @@ function run (execlib, sink){
     testlib.test_resolveUser_to_null.bind(null, sink),
     testlib.test_registerUser.bind(null, sink),
     testlib.test_resolveUser_to_self.bind(null, sink),
-    testlib.test_fetchUser.bind(null, sink)
+    testlib.test_fetchUser.bind(null, sink),
+    //TODO not working -> testlib.test_usernamesLike.bind(null, sink)
+    testlib.test_usernameExists.bind(null, sink)
   ]).go(), 'test');
 }
 

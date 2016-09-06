@@ -44,39 +44,10 @@ function createUser(execlib, ParentUser) {
     qlib.promise2defer(this.__service.registerUser(datahash), defer);
   };
   User.prototype.usernamesLike = function (startingstring, defer) {
-    if(!this.__service.dbUserSink){
-      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
-      return;
-    }
-    taskRegistry.run('readFromDataSink', {
-      sink: this.__service.dbUserSink,
-      filter: {
-        op: 'startingwith',
-        field: this.userNameColumnName(),
-        value: startingstring
-      },
-      cb: console.log.bind(console,'usernamesLike')
-    });
+    qlib.promise2defer(this.__service.usernamesLike(startingstring), defer);
   };
   User.prototype.usernameExists = function (username, defer) {
-    if(!this.__service.dbUserSink){
-      defer.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
-      return;
-    }
-    console.log('usernameExists?', this.userNameColumnName(), '===', username);
-    taskRegistry.run('readFromDataSink', {
-      sink: this.__service.dbUserSink,
-      filter: {
-        op: 'eq',
-        field: this.userNameColumnName(),
-        value: username
-      },
-      cb: function(records) {
-        //console.log('readFromDataSink:',records);
-        defer.resolve(records && records.length>0);
-        defer = null;
-      }
-    });
+    qlib.promise2defer(this.__service.usernameExists(username), defer);
   };
   return User;
 }

@@ -33,11 +33,21 @@ function createTestLib (execlib) {
     return expectOnSink(sink, 'fetchUser', _testCredentials).to.eventually.have.deep.property('profile.username', 'andra');
   };
 
+  function test_usernamesLike(sink) {
+    return expectOnSink(sink, 'usernamesLike', 'andr').to.eventually.have.deep.property('profile.username', 'andra');
+  };
+
+  function test_usernameExists(sink) {
+    return expectOnSink(sink, 'usernameExists', 'andra').to.eventually.be.true;
+  };
+
   return {
     test_resolveUser_to_null: test_resolveUser_to_null,
     test_resolveUser_to_self: test_resolveUser_to_self,
     test_registerUser: test_registerUser,
-    test_fetchUser: test_fetchUser
+    test_fetchUser: test_fetchUser,
+    test_usernamesLike : test_usernamesLike,
+    test_usernameExists : test_usernameExists
   };
 
 }
