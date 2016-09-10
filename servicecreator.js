@@ -60,6 +60,13 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     this.readyToAcceptUsersDefer.resolve(true);
   };
 
+  UserResolverService.prototype.resolveUser = function (credentials) {
+    return (new qlib.PromiseChainerJob([
+      this.fetchUserFromDB.bind(this, credentials),
+      this.match.bind(this, credentials)
+    ])).go();
+  };
+
   UserResolverService.prototype.fetchUserFromDB = function (credentials) {
     var d;
     if(!this.dbUserSink){
@@ -105,14 +112,17 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
       return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
     }
     d = q.defer();
-    console.log('usernameExists?', this.userNameColumnName(), '===', username);
     taskRegistry.run('readFromDataSink', {
       sink: this.dbUserSink,
       cb: function(records) {
         //console.log('readFromDataSink:',records);
         d.resolve(records && records.length>0);
+        d = null;
       },
-      errorcb: d.reject.bind(d),
+      errorcb: function (reason) {
+        d.reject(reason);
+        d = null;
+      },
       filter: {
         op: 'eq',
         field: this.userNameColumnName(),
@@ -210,6 +220,40 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     return (new qlib.PromiseChainerJob(chain)).go();
   };
 
+  UserResolverService.prototype.changePassword = function (username, oldpassword, newpassword) {
+    var usernameandpasswordhash;
+    if (!this.dbUserSink) {
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    usernameandpasswordhash = this.hashFromUsernameAndPassword(username, oldpassword);
+    return this.resolveUser(usernameandpasswordhash).then(
+      this.onUserResolvedForPasswordChange.bind(this, username, newpassword)
+    );
+  };
+  UserResolverService.prototype.onUserResolvedForPasswordChange = function (username, newpassword, resolutionresult) {
+    var usernamehash, passwordhash;
+    if (!resolutionresult) {
+      return q.reject(new lib.Error('BAD_ORIGINAL_PASSWORD', 'Password changed denied because original password did not match'));
+    }
+    if (!this.dbUserSink) {
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    usernamehash = this.hashFromUsername(username);
+    passwordhash = this.hashFromPassword(newpassword);
+    return this.doSaltAndHash(passwordhash).then(
+      (saltandhashobj) => {
+        var ret = this.dbUserSink.call(
+          'update',
+          {op: 'eq', field: this.userNameColumnName(usernamehash), value: username},
+          saltandhashobj,
+          {op: 'set'}
+        );
+        username = null;
+        usernamehash = null;
+        return ret;
+      });
+  };
+
   UserResolverService.prototype.forcePassword = function (username, forcedpassword) {
     var usernamehash, passwordhash;
     if (!this.dbUserSink) {
@@ -239,6 +283,13 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   
   UserResolverService.prototype.hashFromPassword = function (password) {
     var ret = {};
+    ret[this.passwordcolumn] = password;
+    return ret;
+  };
+
+  UserResolverService.prototype.hashFromUsernameAndPassword = function (username, password) {
+    var ret = {};
+    ret[this.namecolumn] = username;
     ret[this.passwordcolumn] = password;
     return ret;
   };

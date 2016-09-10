@@ -29,6 +29,16 @@ module.exports = {
     title: 'Username',
     type: 'string'
   }],
+  changePassword: [{
+    title: 'Username',
+    type: 'string'
+  },{
+    title: 'Old Password',
+    type: 'string'
+  },{
+    title: 'New Password',
+    type: 'string'
+  }],
   forcePassword: [{
     title: 'Username',
     type: 'string'

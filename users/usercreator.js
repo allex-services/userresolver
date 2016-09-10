@@ -18,10 +18,7 @@ function createUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
   User.prototype.resolveUser = function (credentials, defer) {
-    qlib.promise2defer((new qlib.PromiseChainerJob([
-      this.__service.fetchUserFromDB.bind(this.__service, credentials),
-      this.__service.match.bind(this.__service, credentials)
-    ])).go(), defer);
+    qlib.promise2defer(this.__service.resolveUser(credentials), defer);
   };
   User.prototype.fetchUser = function (trusteduserhash, defer) {
     qlib.promise2defer((new qlib.PromiseChainerJob([
@@ -40,6 +37,9 @@ function createUser(execlib, ParentUser) {
   };
   User.prototype.usernameExists = function (username, defer) {
     qlib.promise2defer(this.__service.usernameExists(username), defer);
+  };
+  User.prototype.changePassword = function (username, oldpassword, newpassword, defer) {
+    qlib.promise2defer(this.__service.changePassword(username, oldpassword, newpassword), defer);
   };
   User.prototype.forcePassword = function (username, forcedpassword, defer) {
     qlib.promise2defer(this.__service.forcePassword(username, forcedpassword), defer);
