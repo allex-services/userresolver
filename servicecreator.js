@@ -220,6 +220,21 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     return (new qlib.PromiseChainerJob(chain)).go();
   };
 
+  UserResolverService.prototype.updateUserUnsafe = function (username, datahash, options) {
+    var chain, userhash = this.hashFromUsername(username);
+    if(!this.dbUserSink){
+      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
+    }
+    if (datahash.hasOwnProperty('password')) {
+      return q.reject(new lib.Error('CANNOT_UNSAFE_USER_UPDATE_PASSWORD'));
+    }
+    return this.dbUserSink.call('update', {
+      op: 'eq',
+      field: this.userNameColumnName(userhash),
+      value: this.userNameValueOf(userhash)
+    }, datahash, options);
+  };
+
   UserResolverService.prototype.changePassword = function (username, oldpassword, newpassword) {
     var usernameandpasswordhash;
     if (!this.dbUserSink) {

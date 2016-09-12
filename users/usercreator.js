@@ -29,6 +29,10 @@ function createUser(execlib, ParentUser) {
   User.prototype.updateUser = function (trusteduserhash, datahash, options, defer) {
     qlib.promise2defer(this.__service.updateUser(trusteduserhash, datahash, options), defer);
   };
+  User.prototype.updateUserUnsafe = function (username, datahash, options, defer) {
+    console.log('oli updateUserUnsafe?', username, datahash, options);
+    qlib.promise2defer(this.__service.updateUserUnsafe(username, datahash, options), defer);
+  };
   User.prototype.registerUser = function (datahash, defer) {
     qlib.promise2defer(this.__service.registerUser(datahash), defer);
   };

@@ -17,6 +17,16 @@ module.exports = {
     title: 'Update options',
     type: 'object'
   }],
+  updateUserUnsafe: [{
+    title: 'User Name',
+    type: 'string'
+  },{
+    title: 'Profile Hash',
+    type: 'object'
+  },{
+    title: 'Update options',
+    type: 'object'
+  }],
   registerUser : [{
     title: 'User initial hash',
     type: 'object'
