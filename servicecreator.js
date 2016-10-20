@@ -115,11 +115,12 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     taskRegistry.run('readFromDataSink', {
       sink: this.dbUserSink,
       cb: function(records) {
-        //console.log('readFromDataSink:',records);
+        //console.log('readFromDataSink:',records, records && records.length>0);
         d.resolve(records && records.length>0);
         d = null;
       },
       errorcb: function (reason) {
+        //console.error('readFromDataSink error:',records);
         d.reject(reason);
         d = null;
       },
@@ -146,6 +147,8 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.simpleMatch = function (credentials, dbuserhash) {
+    if (!credentials) return false;
+    if (!dbuserhash) return false;
     return this.userNameValueOf(credentials)===this.userNameValueOf(dbuserhash) && credentials.password===dbuserhash.password;
   };
 
