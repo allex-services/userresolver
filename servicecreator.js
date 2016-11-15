@@ -211,14 +211,15 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
       return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
     }
     chain = [];
-    if (datahash.hasOwnProperty('password')) {
-      chain.push(this.doSaltAndHash.bind(this, datahash));
-    }
+
+    datahash = lib.pickExcept (datahash, [this.passwordcolumn]);
+
     chain.push(this.dbUserSink.call.bind(this.dbUserSink, 'update', {
       op: 'eq',
       field: this.userNameColumnName(trusteduserhash),
       value: this.userNameValueOf(trusteduserhash)
-    }, datahash, options));
+    }, datahash, lib.extend({}, options, {op : 'set', upsert:false})));
+
     chain.push(this.pickedHashPromised.bind(this));
     return (new qlib.PromiseChainerJob(chain)).go();
   };
