@@ -218,7 +218,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
       op: 'eq',
       field: this.userNameColumnName(trusteduserhash),
       value: this.userNameValueOf(trusteduserhash)
-    }, datahash, lib.extend({}, options, {op : 'set', upsert:false})));
+    }, datahash, options));
 
     chain.push(this.pickedHashPromised.bind(this));
     return (new qlib.PromiseChainerJob(chain)).go();
