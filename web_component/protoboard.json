@@ -3,8 +3,7 @@
     "dist/browserified.js":"../browserify.js"
   },
   "protoboard": {
-    "role":"web_component",
-    "public_dirs": ["dist"]
+    "role":"web_component"
   }
 }
 
