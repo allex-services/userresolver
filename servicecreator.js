@@ -153,13 +153,18 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.encryptedMatch = function (credentials, dbuserhash) {
+    var password;
     if (!dbuserhash) {
       return q(false);
     }
     if (!dbuserhash.salt) {
       return q(false);
     }
-    return saltandhashlib.verifyPassword(credentials[this.passwordcolumn],dbuserhash.salt,Buffer(dbuserhash[this.passwordcolumn], 'hex'));
+    password = credentials[this.passwordcolumn];
+    if (!lib.isVal(password)) {
+      return q(false);
+    }
+    return saltandhashlib.verifyPassword(password,dbuserhash.salt,Buffer(dbuserhash[this.passwordcolumn], 'hex'));
   };
 
   UserResolverService.prototype.hashOfDBHash = function (dbhash) {
