@@ -67,6 +67,10 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     ])).go();
   };
 
+  UserResolverService.prototype.onUserFetchedFromDB = function (defer, userhash) {
+    defer.resolve(userhash);
+  };
+
   UserResolverService.prototype.fetchUserFromDB = function (credentials) {
     var d;
     if(!this.dbUserSink){
@@ -75,7 +79,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     d = q.defer();
     taskRegistry.run('readFromDataSink', {
       sink: this.dbUserSink,
-      cb: d.resolve.bind(d),
+      cb: this.onUserFetchedFromDB.bind(this, d),
       errorcb: d.reject.bind(d),
       filter:{
         op: 'eq',
