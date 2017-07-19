@@ -3,7 +3,7 @@ function createServicePack(execlib) {
 
   return {
     service: {
-      dependencies: ['.', 'allex:saltandhash:lib']
+      dependencies: ['.', 'allex_saltandhashlib']
     },
     sinkmap: {
       dependencies: ['.']
