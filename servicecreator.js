@@ -25,6 +25,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     this.passwordcolumn = prophash.passwordcolumn || 'password';
     this.encryptpassword = !prophash.skipencryption;
     this.dbUserSink = null;
+    this.dbCryptoSink = null;
     if (!prophash.skipdata) {
       this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data).then(
         this.onServiceDB.bind(this),
@@ -34,6 +35,13 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   }
   ParentService.inherit(UserResolverService, factoryCreator);
   UserResolverService.prototype.__cleanUp = function() {
+    if (this.dbCryptoSink) {
+      this.dbCryptoSink.destroy();
+    }
+    this.dbCryptoSink = null;
+    if (this.dbUserSink) {
+      this.dbUserSink.destroy();
+    }
     this.dbUserSink = null;
     this.skipencryption = null;
     this.passwordcolumn = null;
@@ -45,24 +53,33 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.onServiceDB = function (dbsink) {
-    dbsink.subConnect('.', {name: 'user', role: 'user'}).then(
-      this.onUserDB.bind(this),
+    var promises = [
+      dbsink.subConnect('.', {name: 'user', role: 'user'})
+    ];
+    if (this.encryptpassword) {
+      promises.push(
+        dbsink.subConnect('.', {name: 'crypto', role: 'crypto'})
+      );
+    }
+    q.all(promises).then(
+      this.onDBSinks.bind(this),
       this.readyToAcceptUsersDefer.reject.bind(this.readyToAcceptUsersDefer)
-    );
+    )
   };
 
-  UserResolverService.prototype.onUserDB = function (dbsink) {
-    if (this.encryptpassword && !(dbsink.visibleFields && dbsink.visibleFields.indexOf('salt')>=0)){
+  UserResolverService.prototype.onDBSinks = function (dbsinks) {
+    this.dbUserSink = dbsinks[0];
+    this.dbCryptoSink = dbsinks[1];
+    if (!(this.dbCryptoSink && this.dbCryptoSink.visibleFields && this.dbCryptoSink.visibleFields.indexOf('salt')>=0)){
       this.readyToAcceptUsersDefer.reject(new lib.Error('NO_SALT_IN_DB_VISIBLE_FIELDS'));
       return;
     }
-    this.dbUserSink = dbsink;
     this.readyToAcceptUsersDefer.resolve(true);
   };
 
   UserResolverService.prototype.resolveUser = function (credentials) {
     return (new qlib.PromiseChainerJob([
-      this.fetchUserFromDB.bind(this, credentials),
+      this.fetchCryptoUserFromDB.bind(this, credentials),
       this.match.bind(this, credentials)
     ])).go();
   };
@@ -72,13 +89,24 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.fetchUserFromDB = function (credentials) {
+    return this.genericFetchUserFromDBProc(this.dbUserSink, credentials);
+  };
+
+  UserResolverService.prototype.fetchCryptoUserFromDB = function (credentials) {
+    return this.genericFetchUserFromDBProc(
+      this.encryptpassword ? this.dbCryptoSink : this.dbUserSink,
+      credentials
+    );
+  };
+
+  UserResolverService.prototype.genericFetchUserFromDBProc = function (sink, credentials) {
     var d;
-    if(!this.dbUserSink){
+    if(!sink){
       return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
     }
     d = q.defer();
     taskRegistry.run('readFromDataSink', {
-      sink: this.dbUserSink,
+      sink: sink,
       cb: this.onUserFetchedFromDB.bind(this, d),
       errorcb: d.reject.bind(d),
       filter:{
@@ -241,11 +269,11 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     if (datahash.hasOwnProperty('password')) {
       return q.reject(new lib.Error('CANNOT_UNSAFE_USER_UPDATE_PASSWORD'));
     }
-    return this.dbUserSink.call('update', {
+    return qlib.promise2console(this.dbUserSink.call('update', {
       op: 'eq',
       field: this.userNameColumnName(userhash),
       value: this.userNameValueOf(userhash)
-    }, datahash, options);
+    }, datahash, options), 'update');
   };
 
   UserResolverService.prototype.changePassword = function (username, oldpassword, newpassword) {
