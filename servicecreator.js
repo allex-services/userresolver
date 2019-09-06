@@ -64,7 +64,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     q.all(promises).then(
       this.onDBSinks.bind(this),
       this.readyToAcceptUsersDefer.reject.bind(this.readyToAcceptUsersDefer)
-    )
+    );
   };
 
   UserResolverService.prototype.onDBSinks = function (dbsinks) {
@@ -175,7 +175,15 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.onMatch = function (credentials, dbhash, match) {
-    return q(match ? this.hashOfDBHash(dbhash) : null);
+    if (!match) {
+      return null;
+    }
+    if (!this.encryptpassword) {
+      return this.hashOfDBHash(dbhash);
+    }
+    return this.genericFetchUserFromDBProc(this.dbUserSink, credentials).then(
+      this.hashOfDBHash.bind(this)
+    );
   };
 
   UserResolverService.prototype.simpleMatch = function (credentials, dbuserhash) {
