@@ -47,6 +47,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     this.passwordcolumn = null;
     this.namecolumn = null;
     ParentService.prototype.__cleanUp.call(this);
+    saltandhashlib.release();
   };
   UserResolverService.prototype.isInitiallyReady = function (prophash) {
     return false;
@@ -204,7 +205,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     if (!lib.isVal(password)) {
       return q(false);
     }
-    return saltandhashlib.verifyPassword(password,dbuserhash.salt,Buffer(dbuserhash[this.passwordcolumn], 'hex'));
+    return saltandhashlib.verifyPasswordOuter(password,dbuserhash.salt,Buffer(dbuserhash[this.passwordcolumn], 'hex'));
   };
 
   UserResolverService.prototype.hashOfDBHash = function (dbhash) {
@@ -232,7 +233,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.doSaltAndHash = function (datahash) {
-    return this.encryptpassword ? saltandhashlib.saltAndHash(datahash[this.passwordcolumn], datahash, this.passwordcolumn).then(
+    return this.encryptpassword ? saltandhashlib.saltAndHashOuter(datahash[this.passwordcolumn], datahash, this.passwordcolumn).then(
       this.onSaltAndHash.bind(this)
     ) : q(datahash);
   };
