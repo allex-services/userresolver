@@ -278,11 +278,11 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     if (datahash.hasOwnProperty('password')) {
       return q.reject(new lib.Error('CANNOT_UNSAFE_USER_UPDATE_PASSWORD'));
     }
-    return qlib.promise2console(this.dbUserSink.call('update', {
+    return this.dbUserSink.call('update', {
       op: 'eq',
       field: this.userNameColumnName(userhash),
       value: this.userNameValueOf(userhash)
-    }, datahash, options), 'update');
+    }, datahash, options);
   };
 
   UserResolverService.prototype.changePassword = function (username, oldpassword, newpassword) {
