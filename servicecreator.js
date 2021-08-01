@@ -6,6 +6,10 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     execSuite = execlib.execSuite,
     taskRegistry = execSuite.taskRegistry;
 
+  var dbresolvermanipulatorslib = require('./dbresolvermanipulators')(execlib);
+
+  var joblib = require('./dbfetchingjobs')(execlib);
+
   function factoryCreator(parentFactory) {
     return {
       'service': require('./users/serviceusercreator')(execlib, parentFactory.get('service')),
@@ -26,15 +30,25 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
     this.encryptpassword = !prophash.skipencryption;
     this.dbUserSink = null;
     this.dbCryptoSink = null;
+    this.plainer = null;
+    this.crypter = null;
     if (!prophash.skipdata) {
-      this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data).then(
-        this.onServiceDB.bind(this),
+      this.createCrypter(prophash).then(
+        this.onCrypter.bind(this, prophash),
         this.close.bind(this)
       );
     }
   }
   ParentService.inherit(UserResolverService, factoryCreator);
   UserResolverService.prototype.__cleanUp = function() {
+    if (this.crypter) {
+      this.crypter.destroy();
+    }
+    this.crypter = null;
+    if (this.plainer) {
+      this.plainer.destroy();
+    }
+    this.plainer = null;
     if (this.dbCryptoSink) {
       this.dbCryptoSink.destroy();
     }
@@ -52,16 +66,23 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   UserResolverService.prototype.isInitiallyReady = function (prophash) {
     return false;
   };
+  UserResolverService.prototype.createCrypter = function (prophash) {
+    return q(prophash.skipencryption ? dbresolvermanipulatorslib.Crypter : dbresolvermanipulatorslib.MongoDbCrypter);
+  };
+  UserResolverService.prototype.onCrypter = function (prophash, crypterctor) {
+    this.plainer = new (dbresolvermanipulatorslib.PlainManipulator)(prophash);
+    this.crypter = new crypterctor(prophash);
+    this.startSubServiceStatically(prophash.data.modulename,'db',prophash.data).then(
+      this.onServiceDB.bind(this),
+      this.close.bind(this)
+    );
+  };
 
   UserResolverService.prototype.onServiceDB = function (dbsink) {
     var promises = [
-      dbsink.subConnect('.', {name: 'user', role: 'user'})
+      this.plainer.subConnectToDbSink(dbsink),
+      this.crypter.subConnectToDbSink(dbsink)
     ];
-    if (this.encryptpassword) {
-      promises.push(
-        dbsink.subConnect('.', {name: 'crypto', role: 'crypto'})
-      );
-    }
     q.all(promises).then(
       this.onDBSinks.bind(this),
       this.readyToAcceptUsersDefer.reject.bind(this.readyToAcceptUsersDefer)
@@ -71,10 +92,6 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   UserResolverService.prototype.onDBSinks = function (dbsinks) {
     this.dbUserSink = dbsinks[0];
     this.dbCryptoSink = dbsinks[1];
-    if (!(this.dbCryptoSink && this.dbCryptoSink.visibleFields && this.dbCryptoSink.visibleFields.indexOf('salt')>=0)){
-      this.readyToAcceptUsersDefer.reject(new lib.Error('NO_SALT_IN_DB_VISIBLE_FIELDS'));
-      return;
-    }
     this.readyToAcceptUsersDefer.resolve(true);
   };
 
@@ -83,10 +100,6 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
       this.fetchCryptoUserFromDB.bind(this, credentials),
       this.match.bind(this, credentials)
     ])).go();
-  };
-
-  UserResolverService.prototype.onUserFetchedFromDB = function (defer, userhash) {
-    defer.resolve(userhash);
   };
 
   UserResolverService.prototype.fetchUserFromDB = function (credentials) {
@@ -101,69 +114,15 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.genericFetchUserFromDBProc = function (sink, credentials) {
-    var d;
-    if(!sink){
-      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
-    }
-    d = q.defer();
-    taskRegistry.run('readFromDataSink', {
-      sink: sink,
-      cb: this.onUserFetchedFromDB.bind(this, d),
-      errorcb: d.reject.bind(d),
-      filter:{
-        op: 'eq',
-        field: this.userNameColumnName(credentials),
-        value: this.userNameValueOf(credentials)
-      },
-      singleshot: true
-    });
-    return d.promise;
+    return (new joblib.FetcherByHashUserName(this.namecolumn, this.passwordcolumn, credentials, sink)).go();
   };
 
   UserResolverService.prototype.usernamesLike = function (startingstring) {
-    var d;
-    if(!this.dbUserSink){
-      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
-    }
-    d = q.defer();
-    taskRegistry.run('readFromDataSink', {
-      sink: this.dbUserSink,
-      cb: d.resolve.bind(d), 
-      errorcb: d.reject.bind(d),
-      filter: {
-        op: 'startingwith',
-        field: this.userNameColumnName(),
-        value: startingstring
-      }
-    });
-    return d.promise;
+    return (new joblib.StartingWithFetcher(this.namecolumn, this.passwordcolumn, startingstring, this.dbUserSink)).go();
   };
 
   UserResolverService.prototype.usernameExists = function (username) {
-    var d;
-    if(!this.dbUserSink){
-      return q.reject(new lib.Error('RESOLVER_DB_DOWN','Resolver DB is currently down. Please, try later'));
-    }
-    d = q.defer();
-    taskRegistry.run('readFromDataSink', {
-      sink: this.dbUserSink,
-      cb: function(records) {
-        //console.log('readFromDataSink:',records, records && records.length>0);
-        d.resolve(records && records.length>0);
-        d = null;
-      },
-      errorcb: function (reason) {
-        //console.error('readFromDataSink error:',records);
-        d.reject(reason);
-        d = null;
-      },
-      filter: {
-        op: 'eq',
-        field: this.userNameColumnName(),
-        value: username
-      }
-    });
-    return d.promise;
+    return (new joblib.ExistsFetcher(this.namecolumn, this.passwordcolumn, username, this.dbUserSink)).go();
   };
 
   UserResolverService.prototype.match = function (credentials, dbhash) {
