@@ -1,6 +1,6 @@
 {
   "name": "allex_userresolverservice",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "UserResolverService",
   "main": "index.js",
   "scripts": {
