@@ -21,10 +21,7 @@ function createUser(execlib, ParentUser) {
     qlib.promise2defer(this.__service.resolveUser(credentials), defer);
   };
   User.prototype.fetchUser = function (trusteduserhash, defer) {
-    qlib.promise2defer((new qlib.PromiseChainerJob([
-      this.__service.fetchUserFromDB.bind(this.__service, trusteduserhash),
-      this.__service.hashOfDBHashPromised.bind(this.__service)
-    ])).go(), defer);
+    qlib.promise2defer(this.__service.fullFetchForOuter(trusteduserhash), defer);
   };
   User.prototype.updateUser = function (trusteduserhash, datahash, options, defer) {
     qlib.promise2defer(this.__service.updateUser(trusteduserhash, datahash, options), defer);
