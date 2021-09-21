@@ -131,7 +131,7 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.genericFetchUserFromDBProc = function (sink, credentials) {
-    return (new joblib.FetcherByHashUserName(this.namecolumn, this.passwordcolumn, credentials, sink)).go();
+    return (new joblib.FetcherByCredentials(this.namecolumn, this.passwordcolumn, credentials, sink)).go();
   };
 
   UserResolverService.prototype.usernamesLike = function (startingstring) {
