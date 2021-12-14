@@ -108,12 +108,17 @@ function createUserResolverService(execlib, ParentService, saltandhashlib) {
   };
 
   UserResolverService.prototype.resolveUser = function (credentials) {
-    return this.crypter.check(credentials).then(
+    var ret = this.crypter.check(credentials).then(
       this.onCrypterMatch.bind(this, credentials)
     );
+    credentials = null;
+    return ret;
   };
   UserResolverService.prototype.onCrypterMatch = function (credentials, check) {
-    return check ? this.fullFetchForOuter(credentials) : null;
+    return check ? 
+      (check == true ? this.fullFetchForOuter(credentials) : this.fullFetchForOuter(check))
+    :
+      null;
   };
   UserResolverService.prototype.fullFetchForOuter = function (credentials) {
     return this.plainer.fullFetchForOuter(credentials);
